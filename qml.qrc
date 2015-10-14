@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file>main.qml</file>
+        <file>tst_main.qml</file>
         <file>MainForm.ui.qml</file>
-        <file>library/models.js</file>
+        <file>library/quickmodel.js</file>
     </qresource>
 </RCC>
