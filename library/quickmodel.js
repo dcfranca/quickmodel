@@ -206,6 +206,13 @@ QuickModel.prototype = {
          this.limiter = limiter;
          return this;
      },
+     get:function() {
+         var objs = this.limit(1).all();
+         if (objs.length > 0)
+             return objs[0];
+
+         return null;
+     },
      all:function() {
         var sql = "SELECT ";
         var fields = [];

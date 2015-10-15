@@ -10,7 +10,7 @@ TestCase {
 
     }
 
-    function test_create_models() {
+    function test_orm() {
         var quickModel = new QuickModel.QuickModel('testApp' + new Date(), '1.0');
         var User = quickModel.define('User', {
           username: [QuickModel.dataType.STRING, 'NOT NULL'],
@@ -75,6 +75,13 @@ TestCase {
         compare(usersFiltered[1].firstName, "Bart");
         compare(usersFiltered[1].username, "bsimpson");
 
+        var me = User.filter({username: "jdoe"}).get();
+        me.lastName = "França";
+
+        me.save();
+
+        compare(User.filter({lastName: "França"}).all().length, 1);
+
     }
 
     function test_manipulate_objects() {
@@ -87,6 +94,3 @@ TestCase {
         //Query new object value
     }
 }
-
-//Test unicode
-//Test *like*
