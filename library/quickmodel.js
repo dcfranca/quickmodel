@@ -58,8 +58,6 @@ QuickModel.prototype = {
         this.tableName = name;
         data['id'] = [dataType.PK];
 
-        var filterConditions = {};
-
         sql_create += " id " + dataType.PK;
         this.properties['id'] = null;
 
@@ -83,15 +81,17 @@ QuickModel.prototype = {
         return this;
     },
     _create_where_clause:function() {
-        var sql = " WHERE ";
+
+        var sql = '';
         var idx = 0;
 
         for (var cond in this.filterConditions) {
             if (idx > 0) sql += " AND ";
             var operator = '=';
+            var field = cond;
             if (cond.indexOf('__') > -1) {
                 var operands = cond.split('__');
-                var field = operands[0];
+                field = operands[0];
                 operator = operands[1];
 
                 switch(operator) {
@@ -108,7 +108,7 @@ QuickModel.prototype = {
                 }
             }
 
-            sql += cond + " " + operator + " ";
+            sql += field + " " + operator + " ";
             if (operator === 'like') {
                 sql += "'%"+ this.filterConditions[cond] + "%'";
             } else {
@@ -116,6 +116,11 @@ QuickModel.prototype = {
             }
             idx++;
         }
+
+        if (sql.length > 0) {
+            sql = " WHERE " + sql;
+        }
+
         return sql;
     },
     update:function(newValues) {
@@ -193,6 +198,14 @@ QuickModel.prototype = {
          this.filterConditions = conditions;
          return this;
      },
+     order:function(sorters) {
+         this.sorters = sorters;
+         return this;
+     },
+     limit:function(limiter) {
+         this.limiter = limiter;
+         return this;
+     },
      all:function() {
         var sql = "SELECT ";
         var fields = [];
@@ -203,6 +216,24 @@ QuickModel.prototype = {
         sql += fields.join(',');
         sql += " FROM " + this.tableName;
         sql += this._create_where_clause();
+
+        if (this.sorters && this.sorters.length > 0) {
+            sql += " ORDER BY ";
+            for (var idxOrder=0; idxOrder < this.sorters.length; idxOrder++) {
+                if (idxOrder > 0) sql += ", ";
+                var ord = this.sorters[idxOrder];
+                if (ord[0] === '-') {
+                    sql += ord.substring(1) + " DESC ";
+                }
+                else {
+                    sql += ord;
+                }
+            }
+        }
+
+        if (this.limiter) {
+            sql += " LIMIT " + this.limiter;
+        }
 
         var rs = [];
 

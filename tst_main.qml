@@ -45,6 +45,36 @@ TestCase {
         users = User.filter({username: "dfranca"}).all();
         compare(users.length, 0);
 
+        var user1 = User.create({username: "hsimpson", firstName: "Homer", lastName: "Simpson", birthday: new Date("1995-10-05"), height: 1.81});
+        var user2 = User.create({username: "jdoe", firstName: "John", lastName: "Doe", birthday: new Date("1989-10-05"), height: 1.55});
+        var user3 = User.create({username: "alock", firstName: "Adam", lastName: "Lock", height: 2.05, birthday: new Date("1991-10-25")});
+
+        user = User.filter({username: "dfranca"}).update({height: 1.81});
+
+        var usersOrdered = User.filter().order(['height']).all();
+
+        compare(usersOrdered.length, 3);
+
+        compare(usersOrdered[0].height, 1.55);
+        compare(usersOrdered[0].username, "jdoe");
+
+        compare(usersOrdered[1].height, 1.81);
+        compare(usersOrdered[1].username, "hsimpson");
+
+        compare(usersOrdered[2].height, 2.05);
+        compare(usersOrdered[2].username, "alock");
+
+        var user4 = User.create({username: "bsimpson", firstName: "Bart", lastName: "Simpson", birthday: new Date("2002-06-12"), height: 1.30});
+
+        var usersFiltered = User.filter({username__like: "simpson"}).order(['-height']).all();
+        compare(usersFiltered.length, 2);
+
+        compare(usersFiltered[0].firstName, "Homer");
+        compare(usersFiltered[0].username, "hsimpson");
+
+        compare(usersFiltered[1].firstName, "Bart");
+        compare(usersFiltered[1].username, "bsimpson");
+
     }
 
     function test_manipulate_objects() {
@@ -57,3 +87,6 @@ TestCase {
         //Query new object value
     }
 }
+
+//Test unicode
+//Test *like*
