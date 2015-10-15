@@ -24,6 +24,7 @@ function QuickModel(appName, version) {
     this.db = Sql.LocalStorage.openDatabaseSync(appName + '_db', version, appName, 100000);
 }
 
+
 QuickModel.prototype = {
 
     constructor: QuickModel,
@@ -36,6 +37,19 @@ QuickModel.prototype = {
                 tx.executeSql(sql);
             }
         )
+    },
+    modelObject: function(data) {
+        data['save'] = this.save;
+        data['_meta'] = {
+            db: this.db,
+            tableName: this.tableName,
+            update: this.update,
+            filter: this.filter,
+            _insert: this._insert,
+            run_sql: this.run_sql,
+            _create_where_clause: this._create_where_clause
+        }
+        return data;
     },
     define: function(name, data) {
         var sql_create = "CREATE TABLE IF NOT EXISTS " + name + " (";
@@ -133,20 +147,41 @@ QuickModel.prototype = {
         sql += fields.join(',');
         sql += ") VALUES (" + values.join(',') + ")";
 
-        this.run_sql(sql);
+        var rs;
+        this.db.transaction(
+            function(tx) {
+                console.log("Run SQL: " + sql);
+                rs = tx.executeSql(sql);
+            }
+        )
+
+        return rs.insertId;
      },
      create:function(data) {
         for (var field in data) {
             this.properties[field] = data[field];
         }
 
-        this._insert();
+        var insertId = this._insert();
+        var objs = this.filter({id:insertId}).all();
+        if (objs.length > 0) {
+            return objs[0];
+        }
+
+        return null;
      },
      save:function() {
-        if (this.properties[id]) {
-            update();
+        if (this.id) {
+            var updateFields = {};
+            for (var newValue in this) {
+                if (newValue !== 'save' && newValue !== '_meta') {
+                    updateFields[newValue] = this[newValue];
+                }
+            }
+
+            this._meta.filter({id: this.id}).update(updateFields);
         } else {
-            _insert();
+            this._insert();
         }
      },
      exclude:function() {
@@ -181,9 +216,16 @@ QuickModel.prototype = {
         )
 
         console.log("AFTER RESULT SET: " + rs);
+        var objs = [];
+        for (var i=0; i < rs.rows.length; i++) {
+            var item = rs.rows.item(i);
+            var obj = this.modelObject(item);
+            objs.push(obj);
+        }
 
-        return rs;
+        return objs;
     }
 }
 
 //TODO: Migrations!
+//TODO: first/limit (top)

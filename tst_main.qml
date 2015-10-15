@@ -21,25 +21,29 @@ TestCase {
           weight: [QuickModel.dataType.INTEGER]
         });
 
-        var user = User.create({username: "dfranca", firstName: "Daniel", lastName: "França"});
+        var user = User.create({username: "dfranca", firstName: "Daniel", lastName: "Franca"});
         var users = User.filter({username: "dfrancx"}).all();
-        compare(users.rows.length, 0);
+        compare(users.length, 0);
         users = User.filter({username: "dfranca"}).all();
-        console.log("RS USERS: " + users);
-        compare(users.rows.length, 1);
-        user = users.rows.item(0);
+        compare(users.length, 1);
+        user = users[0];
 
         compare(user.id, 1);
 
+        user.lastName = 'Frank';
+        user.save();
+        users = User.filter({lastName: "Frank"}).all();
+        compare(users.length, 1);
+
         users = User.filter({username: "dfranca", firstName: "Danix"}).all();
-        compare(users.rows.length, 0);
+        compare(users.length, 0);
         User.filter({username: "dfranca", firstName: "Daniel"}).update({firstName: "Danix"});
         users = User.filter({username: "dfranca", firstName: "Danix"}).all();
-        compare(users.rows.length, 1);
+        compare(users.length, 1);
 
         User.filter({username: "dfranca", firstName: "Danix"}).exclude();
         users = User.filter({username: "dfranca"}).all();
-        compare(users.rows.length, 0);
+        compare(users.length, 0);
 
     }
 
