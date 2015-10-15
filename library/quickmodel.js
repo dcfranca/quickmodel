@@ -112,7 +112,12 @@ QuickModel.prototype = {
             if (operator === 'like') {
                 sql += "'%"+ this.filterConditions[cond] + "%'";
             } else {
-                sql += "'" + this.filterConditions[cond] + "'";
+                if (this.filterConditions[cond].constructor === String) {
+                    sql += "'" + this.filterConditions[cond] + "'";
+                }
+                else {
+                    sql += this.filterConditions[cond];
+                }
             }
             idx++;
         }
@@ -224,6 +229,10 @@ QuickModel.prototype = {
         sql += " FROM " + this.tableName;
         sql += this._create_where_clause();
 
+        if (this.sorters && this.sorters.constructor === String) {
+            this.sorters = [this.sorters];
+        }
+
         if (this.sorters && this.sorters.length > 0) {
             sql += " ORDER BY ";
             for (var idxOrder=0; idxOrder < this.sorters.length; idxOrder++) {
@@ -261,9 +270,13 @@ QuickModel.prototype = {
             objs.push(obj);
         }
 
+        this.filterConditions = {};
+        this.limiter = null;
+        this.sorters = null;
+
         return objs;
     }
 }
 
 //TODO: Migrations!
-//TODO: first/limit (top)
+//TODO: Replace concatenations with binds '?'

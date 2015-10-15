@@ -12,6 +12,8 @@ TestCase {
 
     function test_orm() {
         var quickModel = new QuickModel.QuickModel('testApp' + new Date(), '1.0');
+
+        //Define object
         var User = quickModel.define('User', {
           username: [QuickModel.dataType.STRING, 'NOT NULL'],
           firstName: [QuickModel.dataType.STRING],
@@ -21,7 +23,9 @@ TestCase {
           weight: [QuickModel.dataType.INTEGER]
         });
 
+        //Create object
         var user = User.create({username: "dfranca", firstName: "Daniel", lastName: "Franca"});
+        //Filter objects
         var users = User.filter({username: "dfrancx"}).all();
         compare(users.length, 0);
         users = User.filter({username: "dfranca"}).all();
@@ -82,15 +86,13 @@ TestCase {
 
         compare(User.filter({lastName: "França"}).all().length, 1);
 
-    }
+        //Check users higher than 1.8m (to see how operators work)
+        var tallUsers = User.filter({height__gt: 1.8}).order('height').all();
+        compare(tallUsers.length, 2);
+        compare(tallUsers[0].username, "hsimpson");
+        compare(tallUsers[1].username, "alock");
 
-    function test_manipulate_objects() {
-        //Create object
-        //Query object
-        //Delete object
-        //Query object
-        //Update object
-        //Query old object value
-        //Query new object value
     }
 }
+
+//Filter using >= <=
