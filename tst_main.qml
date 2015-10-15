@@ -34,6 +34,7 @@ TestCase {
 
         compare(user.id, 1);
 
+        //Save single object field change
         user.lastName = 'Frank';
         user.save();
         users = User.filter({lastName: "Frank"}).all();
@@ -41,10 +42,13 @@ TestCase {
 
         users = User.filter({username: "dfranca", firstName: "Danix"}).all();
         compare(users.length, 0);
+
+        //Update user name and check if it was saved
         User.filter({username: "dfranca", firstName: "Daniel"}).update({firstName: "Danix"});
         users = User.filter({username: "dfranca", firstName: "Danix"}).all();
         compare(users.length, 1);
 
+        //Delete user
         User.filter({username: "dfranca", firstName: "Danix"}).exclude();
         users = User.filter({username: "dfranca"}).all();
         compare(users.length, 0);
@@ -55,6 +59,7 @@ TestCase {
 
         user = User.filter({username: "dfranca"}).update({height: 1.81});
 
+        //Sort all users by height
         var usersOrdered = User.filter().order(['height']).all();
 
         compare(usersOrdered.length, 3);
@@ -70,6 +75,7 @@ TestCase {
 
         var user4 = User.create({username: "bsimpson", firstName: "Bart", lastName: "Simpson", birthday: new Date("2002-06-12"), height: 1.30});
 
+        //Sort %simpsons% users by height desc
         var usersFiltered = User.filter({username__like: "simpson"}).order(['-height']).all();
         compare(usersFiltered.length, 2);
 
