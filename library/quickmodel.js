@@ -141,7 +141,8 @@ QuickModel.prototype = {
 
         for (var cond in this.filterConditions) {
             if (idx > 0) sql += " AND ";
-            var operator = '=';
+            var operator;
+            var newOperator = '=';
             var field = cond;
             if (cond.indexOf('__') > -1) {
                 var operands = cond.split('__');
@@ -150,22 +151,28 @@ QuickModel.prototype = {
 
                 switch(operator) {
                 case 'gt':
-                    operator = '>'; break;
+                    newOperator = '>'; break;
                 case 'ge':
-                    operator = '>='; break;
+                    newOperator = '>='; break;
                 case 'lt':
-                    operator = '<'; break;
+                    newOperator = '<'; break;
                 case 'le':
-                    operator = '<='; break;
+                    newOperator = '<='; break;
+                case 'null':
+                    if (this.filterConditions[cond])
+                        newOperator = 'IS NULL';
+                    else
+                        newOperator = 'IS NOT NULL';
+                    break;
                 case 'like':
-                    operator = 'like'; break;
+                    newOperator = 'like'; break;
                 }
             }
 
-            sql += field + " " + operator + " ";
+            sql += field + " " + newOperator + " ";
             if (operator === 'like') {
                 sql += "'%"+ this.filterConditions[cond] + "%'";
-            } else {
+            } else if (operator !== 'null') {
                 if (this.filterConditions[cond].constructor === String) {
                     sql += "'" + this.filterConditions[cond] + "'";
                 }

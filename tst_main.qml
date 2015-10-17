@@ -10,7 +10,7 @@ TestCase {
 
     }
 
-    function test_orm() {
+    function test_basic_orm() {
         var quickModel = new QuickModel.QuickModel('testApp' + new Date(), '1.0');
 
         //Define object
@@ -98,10 +98,30 @@ TestCase {
         compare(tallUsers[0].username, "hsimpson");
         compare(tallUsers[1].username, "alock");
 
+        //Test limit
+        var user5 = User.create({username: "tmosby", firstName: "Ted", lastName: "Mosby", birthday: new Date("1980-08-01"), height: 1.22});
+
+        var shortestUsers = User.filter({height__lt: 1.8}).order('height').limit(2).all();
+        compare(shortestUsers.length, 2);
+        compare(shortestUsers[0].username, "tmosby");
+        compare(shortestUsers[1].username, "bsimpson");
+
+        //Test sorting date and not null
+        var youngestUser = User.filter({birthday__null: false}).order('-birthday').get();
+        compare(youngestUser.username, 'bsimpson');
+        var bd = new Date(youngestUser.birthday);
+        compare(bd.getFullYear(), 2002);
+        compare(bd.getMonth()+1, 6);
+        compare(bd.getDate(), 12);
     }
+
+    /*function test_field_attributes() {
+    }*/
 }
 
 //Get/Set for lazy evaluation
 //Test foreign key
 //Test unique item
 //Test not null
+//Test delete foreign key
+//Test sorting date
