@@ -15,12 +15,12 @@ TestCase {
 
         //Define object
         var User = quickModel.define('User', {
-          username: [QuickModel.dataType.STRING, 'NOT NULL'],
-          firstName: [QuickModel.dataType.STRING],
-          lastName: [QuickModel.dataType.STRING],
-          birthday: [QuickModel.dataType.DATE],
-          height: [QuickModel.dataType.FLOAT],
-          weight: [QuickModel.dataType.INTEGER]
+          username: quickModel.String('Username', {accept_null:false}),
+          firstName: quickModel.String('First Name'),
+          lastName: quickModel.String('Last Name'),
+          birthday: quickModel.Date('Birthday'),
+          height: quickModel.Float('Height'),
+          weight: quickModel.Integer('Weight')
         });
 
         //Create object
@@ -49,7 +49,7 @@ TestCase {
         compare(users.length, 1);
 
         //Delete user
-        User.filter({username: "dfranca", firstName: "Danix"}).exclude();
+        User.filter({username: "dfranca", firstName: "Danix"}).remove();
         users = User.filter({username: "dfranca"}).all();
         compare(users.length, 0);
 
@@ -101,4 +101,7 @@ TestCase {
     }
 }
 
-//Filter using >= <=
+//Get/Set for lazy evaluation
+//Test foreign key
+//Test unique item
+//Test not null

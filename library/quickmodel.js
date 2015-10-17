@@ -1,16 +1,5 @@
 .import QtQuick.LocalStorage 2.0 as Sql
 
-var dataType = {
-    //Data types
-    STRING: "TEXT",
-    INTEGER: "INTEGER",
-    DATE: "TEXT",
-    DATETIME: "TEXT",
-    REAL: "REAL",
-    FLOAT: "FLOAT",
-    PK: "INTEGER PRIMARY KEY"
-}
-
 /*
 
   new QuickDB('database', '1.0', 'myApp')
@@ -20,8 +9,40 @@ var dataType = {
 
 var db;
 
+function QuickField(type, label, params) {
+    this.items = [];
+    var fieldName;
+    this.type = type;
+    this.params = params;
+}
+
 function QuickModel(appName, version) {
     this.db = Sql.LocalStorage.openDatabaseSync(appName + '_db', version, appName, 100000);
+
+    this.String = function(label, params) {
+        return new QuickField('TEXT', label, params);
+    }
+    this.Integer = function(label, params) {
+        return new QuickField('INTEGER', label, params);
+    }
+    this.Float = function(label, params) {
+        return new QuickField('FLOAT', label, params);
+    }
+    this.Real = function(label, params) {
+        return new QuickField('REAL', label, params);
+    }
+    this.Date = function(label, params) {
+        return new QuickField('DATE', label, params);
+    }
+    this.DateTime = function(label, params) {
+        return new QuickField('DATETIME', label, params);
+    }
+    this.PK = function(label, params) {
+        return new QuickField('INTEGER PRIMARY KEY', label, params);
+    }
+    this.FK = function(label, params) {
+        return new QuickField('FK', label, params);
+    }
 }
 
 
@@ -51,24 +72,57 @@ QuickModel.prototype = {
         }
         return data;
     },
+    _define_field: function(column, data) {
+        var sql;
+        var items = [];
+
+        //If is a foreign key
+        if (data.type === 'FK') {
+            items.push('FOREIGN KEY(' + column + ')')
+        }
+        else if (data.type === 'PK') {
+            items.push(column);
+            items.push('INTEGER PRIMARY KEY');
+        }
+        else {
+            items.push(column);
+            items.push(data.type);
+        }
+
+        for (var param in data.params) {
+            switch(param) {
+                case 'accept_null':
+                    if (!param) {
+                        items.push('NOT NULL');
+                    }
+                    break;
+                case 'unique':
+                    if (unique) {
+                        items.push('UNIQUE');
+                    }
+                    break;
+                case 'references':
+                    var t = params[param].split('.');
+                    items.push('REFERENCES ' + t[0] + '(' + t[1] + ')');
+                    break;
+            }
+        }
+
+        return items.join(' ');
+    },
     define: function(name, data) {
         var sql_create = "CREATE TABLE IF NOT EXISTS " + name + " (";
         var idx = 0;
         this.properties = {};
         this.tableName = name;
-        data['id'] = [dataType.PK];
 
-        sql_create += " id " + dataType.PK;
+        sql_create += this._define_field('id', {type: 'PK'});
         this.properties['id'] = null;
 
         for (var column in data) {
             if (column === 'id') continue;
             var definitions = data[column];
-            sql_create += ", " + column + " " + definitions[0];
-            for (var i=1; i < definitions.length; i++) {
-                sql_create += " " + definitions[i];
-            }
-
+            sql_create += ", " + this._define_field(column, data[column]);
             this.properties[column] = null;
             idx++;
         }
@@ -194,7 +248,7 @@ QuickModel.prototype = {
             this._insert();
         }
      },
-     exclude:function() {
+     remove:function() {
         var sql = "DELETE FROM " + this.tableName;
         sql += this._create_where_clause();
         this.run_sql(sql);
