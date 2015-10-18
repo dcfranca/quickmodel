@@ -6,12 +6,34 @@ import "library/quickmodel.js" as QuickModel
 TestCase {
     name: "quickModelTests"
 
-    function test_create_database() {
+    /****************
+      Classes: QMDatabase / QMClass / QMObject
+      Instantiate a new database -- new QMDatabase(databaseName)
 
-    }
+      QMDatabase
+        define (return new QMClass)
+        _define_field (return field string)
+        _run_sql
+
+      QMClass
+        create (return new QMObject)
+        filter (return this)
+        order (return this)
+        limit (return this)
+        get
+        all
+        update
+        insert
+        remove
+        _define_where_clause (return where clause string)
+
+      QMObject
+        save
+
+      ***************/
 
     function test_basic_orm() {
-        var quickModel = new QuickModel.QuickModel('testApp' + new Date(), '1.0');
+        var quickModel = new QuickModel.QMDatabase('testApp' + new Date(), '1.0');
 
         //Define object
         var User = quickModel.define('User', {
@@ -115,8 +137,21 @@ TestCase {
         compare(bd.getDate(), 12);
     }
 
-    /*function test_field_attributes() {
-    }*/
+    function test_field_attributes() {
+        var quickModel = new QuickModel.QMDatabase('testApp' + new Date(), '1.0');
+
+        //Define objects
+        var Artist = quickModel.define('Artist', {
+            name: quickModel.String('Name', {accept_null:false})
+        });
+        var Track = quickModel.define('Track', {
+            trackName: quickModel.String('Track Name', {accept_null:false}),
+            artist: quickModel.FK('Artist', {'references': 'Artist'})
+        })
+
+        //Shouldn work
+        var artist = Artist.create({name: null});
+    }
 }
 
 //Get/Set for lazy evaluation

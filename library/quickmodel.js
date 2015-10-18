@@ -2,83 +2,52 @@
 
 /*
 
-  new QuickDB('database', '1.0', 'myApp')
+  new QMDatabase('myApp', '1.0')
   define : returns an object with functions create/filter/delete
   create: returns an object with the properties
   */
 
-var db;
-
-function QuickField(type, label, params) {
-    this.items = [];
-    var fieldName;
-    this.type = type;
-    this.params = params;
+function QMDatabase(appName, version) {
+    this.conn = Sql.LocalStorage.openDatabaseSync(appName + '_db', version, appName, 100000);
 }
 
-function QuickModel(appName, version) {
-    this.db = Sql.LocalStorage.openDatabaseSync(appName + '_db', version, appName, 100000);
+QMDatabase.prototype = {
+    constructor: QMDatabase,
 
-    this.String = function(label, params) {
-        return new QuickField('TEXT', label, params);
-    }
-    this.Integer = function(label, params) {
-        return new QuickField('INTEGER', label, params);
-    }
-    this.Float = function(label, params) {
-        return new QuickField('FLOAT', label, params);
-    }
-    this.Real = function(label, params) {
-        return new QuickField('REAL', label, params);
-    }
-    this.Date = function(label, params) {
-        return new QuickField('DATE', label, params);
-    }
-    this.DateTime = function(label, params) {
-        return new QuickField('DATETIME', label, params);
-    }
-    this.PK = function(label, params) {
-        return new QuickField('INTEGER PRIMARY KEY', label, params);
-    }
-    this.FK = function(label, params) {
-        return new QuickField('FK', label, params);
-    }
-}
-
-
-QuickModel.prototype = {
-
-    constructor: QuickModel,
-
-    //define the table
-    run_sql: function(sql) {
-        this.db.transaction(
-            function(tx) {
-                console.log("Run SQL: " + sql);
-                tx.executeSql(sql);
-            }
-        )
+    String: function(label, params) {
+        return new QMField('TEXT', label, params);
     },
-    modelObject: function(data) {
-        data['save'] = this.save;
-        data['_meta'] = {
-            db: this.db,
-            tableName: this.tableName,
-            update: this.update,
-            filter: this.filter,
-            _insert: this._insert,
-            run_sql: this.run_sql,
-            _create_where_clause: this._create_where_clause
-        }
-        return data;
+    Integer: function(label, params) {
+        return new QMField('INTEGER', label, params);
     },
-    _define_field: function(column, data) {
+    Float: function(label, params) {
+        return new QMField('FLOAT', label, params);
+    },
+    Real: function(label, params) {
+        return new QMField('REAL', label, params);
+    },
+    Date: function(label, params) {
+        return new QMField('DATE', label, params);
+    },
+    DateTime: function(label, params) {
+        return new QMField('DATETIME', label, params);
+    },
+    PK: function(label, params) {
+        return new QMField('INTEGER PRIMARY KEY', label, params);
+    },
+    FK: function(label, params) {
+        return new QMField('FK', label, params);
+    },
+    _defineField: function(column, data) {
         var sql;
         var items = [];
+        var fk = [];
 
         //If is a foreign key
         if (data.type === 'FK') {
-            items.push('FOREIGN KEY(' + column + ')')
+            items.push(column)
+            items.push('INTEGER')
+            fk.push('FOREIGN KEY(' + column + ')')
         }
         else if (data.type === 'PK') {
             items.push(column);
@@ -102,13 +71,12 @@ QuickModel.prototype = {
                     }
                     break;
                 case 'references':
-                    var t = params[param].split('.');
-                    items.push('REFERENCES ' + t[0] + '(' + t[1] + ')');
+                    fk.push('REFERENCES ' + data.params[param] + '(id)');
                     break;
             }
         }
 
-        return items.join(' ');
+        return {field: items.join(' '), fk: fk.join(' ')};
     },
     define: function(name, data) {
         var sql_create = "CREATE TABLE IF NOT EXISTS " + name + " (";
@@ -116,26 +84,208 @@ QuickModel.prototype = {
         this.properties = {};
         this.tableName = name;
 
-        sql_create += this._define_field('id', {type: 'PK'});
+        var field_pk = this._defineField('id', {type: 'PK'});
+        sql_create += field_pk['field'];
         this.properties['id'] = null;
 
+        var foreign_keys = [];
         for (var column in data) {
             if (column === 'id') continue;
             var definitions = data[column];
-            sql_create += ", " + this._define_field(column, data[column]);
+            var field_data = this._defineField(column, data[column]);
+            sql_create += ", " + field_data['field'];
+
+            if (field_data['fk'].length > 0) {
+                foreign_keys.push(field_data['fk']);
+            }
+
             this.properties[column] = null;
             idx++;
+        }
+
+        //Create foreign key references
+        for (var ifk=0; ifk < foreign_keys.length; ifk++) {
+            sql_create += ", " + foreign_keys[ifk];
         }
 
         sql_create += ")";
 
         //Run create table
-        this.run_sql(sql_create);
+        this._runSQL(sql_create);
 
+        return new QMModel(this, name, this.properties);
+    },
+    _runSQL: function(sql) {
+        this.conn.transaction(
+            function(tx) {
+                console.log("Run SQL: " + sql);
+                tx.executeSql(sql);
+            }
+        )
+    }
+};
+
+/*******************************
+  QMModel
+  Define a class referencing a database table
+  *****************************/
+
+function QMModel(db, tableName, fields) {
+    this.filterConditions = {};
+    this.sorters = [];
+    this.limiters = null;
+
+    this._meta = {
+        db: db,
+        tableName: tableName,
+        fields: fields,
+    };
+}
+
+QMModel.prototype = {
+    create: function(data) {
+        var obj = this._makeObject(data);
+        var insertId = this.insert(obj);
+
+        var objs = this.filter({id:insertId}).all();
+        if (objs.length > 0) {
+            return objs[0];
+        }
+
+        return null;
+    },
+    filter: function(conditions) {
+        this.filterConditions = conditions;
         return this;
     },
-    _create_where_clause:function() {
+    order: function(sorters) {
+        if (typeof sorters === 'string') {
+            if (!this.sorters) {
+                this.sorters = [];
+            }
+            this.sorters.push(sorters);
+        }
+        else if (Array.isArray(sorters)) {
+            this.sorters = sorters;
+        }
+        return this;
+    },
+    limit: function(limiter) {
+        this.limiter = limiter;
+        return this;
+    },
+    get: function() {
+        var objs = this.limit(1).all();
+        if (objs.length > 0)
+            return objs[0];
 
+        return null;
+    },
+    all: function() {
+        var sql = "SELECT ";
+        var fields = [];
+        for (var field in this._meta.fields) {
+            fields.push(field);
+        }
+
+        sql += fields.join(',');
+        sql += " FROM " + this._meta.tableName;
+        sql += this._defineWhereClause();
+
+        if (this.sorters && this.sorters.constructor === String) {
+            this.sorters = [this.sorters];
+        }
+
+        if (this.sorters && this.sorters.length > 0) {
+            sql += " ORDER BY ";
+            for (var idxOrder=0; idxOrder < this.sorters.length; idxOrder++) {
+                if (idxOrder > 0) sql += ", ";
+                var ord = this.sorters[idxOrder];
+                if (ord[0] === '-') {
+                    sql += ord.substring(1) + " DESC ";
+                }
+                else {
+                    sql += ord;
+                }
+            }
+        }
+
+        if (this.limiter) {
+            sql += " LIMIT " + this.limiter;
+        }
+
+        var rs = [];
+
+        this._meta.db.conn.transaction(
+            function(tx) {
+                console.log("Run SQL: " + sql);
+                rs = tx.executeSql(sql)
+
+                //console.log("RESULT SET: " + rs);
+            }
+        )
+
+        var objs = [];
+        for (var i=0; i < rs.rows.length; i++) {
+            var item = rs.rows.item(i);
+            var obj = this._makeObject(item);
+            objs.push(obj);
+        }
+
+        this.filterConditions = {};
+        this.limiter = null;
+        this.sorters = null;
+
+        return objs;
+    },
+    update: function(newValues) {
+        var sql = "UPDATE " + this._meta.tableName + " SET ";
+        var idx = 0;
+        for (var field in newValues) {
+            if (field === 'id') continue;
+
+            if (idx > 0) sql += ",";
+            sql += field + " = '" + newValues[field] + "'";
+            idx++;
+        };
+        sql += this._defineWhereClause(this.filterConditions);
+
+        this._meta.db._runSQL(sql);
+    },
+    insert: function(obj) {
+        var sql = "INSERT INTO " + this._meta.tableName + "(";
+        var fields = [];
+        var values = [];
+        for (var field in obj) {
+            if (field === 'id' || field === '_meta' || field === 'save')
+                continue;
+            fields.push(field);
+            if (obj[field]) {
+                values.push("'" + obj[field] + "'");
+            }
+            else {
+                values.push('NULL');
+            }
+        }
+        sql += fields.join(',');
+        sql += ") VALUES (" + values.join(',') + ")";
+
+        var rs;
+        this._meta.db.conn.transaction(
+            function(tx) {
+                console.log("Run SQL: " + sql);
+                rs = tx.executeSql(sql);
+            }
+        )
+
+        return rs.insertId;
+    },
+    remove: function() {
+        var sql = "DELETE FROM " + this._meta.tableName;
+        sql += this._defineWhereClause();
+        this._meta.db._runSQL(sql);
+    },
+    _defineWhereClause: function() {
         var sql = '';
         var idx = 0;
 
@@ -189,154 +339,54 @@ QuickModel.prototype = {
 
         return sql;
     },
-    update:function(newValues) {
-        var sql = "UPDATE " + this.tableName + " SET ";
-        var idx = 0;
-        for (var prop in newValues) {
-            if (idx > 0) sql += ",";
-            sql += prop + " = '" + newValues[prop] + "'";
-            idx++;
-        };
-        sql += this._create_where_clause();
-
-        this.run_sql(sql);
-    },
-    _insert:function() {
-        var sql = "INSERT INTO " + this.tableName + "(";
-        var fields = [];
-        var values = [];
-        for (var field in this.properties) {
-            if (field === 'id')
-                continue;
-            fields.push(field);
-            if (this.properties[field]) {
-                values.push("'" + this.properties[field] + "'");
-            }
-            else
-                values.push('NULL');
+    _makeObject: function(values) {
+        var obj = new QMObject(this);
+        for (var key in values) {
+            obj[key] = values[key];
         }
-        sql += fields.join(',');
-        sql += ") VALUES (" + values.join(',') + ")";
-
-        var rs;
-        this.db.transaction(
-            function(tx) {
-                console.log("Run SQL: " + sql);
-                rs = tx.executeSql(sql);
-            }
-        )
-
-        return rs.insertId;
-     },
-     create:function(data) {
-        for (var field in data) {
-            this.properties[field] = data[field];
-        }
-
-        var insertId = this._insert();
-        var objs = this.filter({id:insertId}).all();
-        if (objs.length > 0) {
-            return objs[0];
-        }
-
-        return null;
-     },
-     save:function() {
-        if (this.id) {
-            var updateFields = {};
-            for (var newValue in this) {
-                if (newValue !== 'save' && newValue !== '_meta') {
-                    updateFields[newValue] = this[newValue];
-                }
-            }
-
-            this._meta.filter({id: this.id}).update(updateFields);
-        } else {
-            this._insert();
-        }
-     },
-     remove:function() {
-        var sql = "DELETE FROM " + this.tableName;
-        sql += this._create_where_clause();
-        this.run_sql(sql);
-     },
-     filter:function(conditions) {
-         this.filterConditions = conditions;
-         return this;
-     },
-     order:function(sorters) {
-         this.sorters = sorters;
-         return this;
-     },
-     limit:function(limiter) {
-         this.limiter = limiter;
-         return this;
-     },
-     get:function() {
-         var objs = this.limit(1).all();
-         if (objs.length > 0)
-             return objs[0];
-
-         return null;
-     },
-     all:function() {
-        var sql = "SELECT ";
-        var fields = [];
-        for (var field in this.properties) {
-            fields.push(field);
-        }
-
-        sql += fields.join(',');
-        sql += " FROM " + this.tableName;
-        sql += this._create_where_clause();
-
-        if (this.sorters && this.sorters.constructor === String) {
-            this.sorters = [this.sorters];
-        }
-
-        if (this.sorters && this.sorters.length > 0) {
-            sql += " ORDER BY ";
-            for (var idxOrder=0; idxOrder < this.sorters.length; idxOrder++) {
-                if (idxOrder > 0) sql += ", ";
-                var ord = this.sorters[idxOrder];
-                if (ord[0] === '-') {
-                    sql += ord.substring(1) + " DESC ";
-                }
-                else {
-                    sql += ord;
-                }
-            }
-        }
-
-        if (this.limiter) {
-            sql += " LIMIT " + this.limiter;
-        }
-
-        var rs = [];
-
-        this.db.transaction(
-            function(tx) {
-                console.log("Run SQL: " + sql);
-                rs = tx.executeSql(sql)
-
-                console.log("RESULT SET: " + rs);
-            }
-        )
-
-        console.log("AFTER RESULT SET: " + rs);
-        var objs = [];
-        for (var i=0; i < rs.rows.length; i++) {
-            var item = rs.rows.item(i);
-            var obj = this.modelObject(item);
-            objs.push(obj);
-        }
-
-        this.filterConditions = {};
-        this.limiter = null;
-        this.sorters = null;
-
-        return objs;
+        return obj;
     }
+};
+
+
+/**************************************
+  QMObject
+  reference a single instance of a object in the database
+  *************************************/
+function QMObject(model) {
+    this._meta = {
+        model: model,
+    };
+
+    this.id = null;
+    //Functions for single object
+    //save
+    this.save = function() {
+       if (this.id) {
+           var updateFields = {};
+           for (var newValue in this) {
+               if (newValue !== 'save' && newValue !== '_meta') {
+                   updateFields[newValue] = this[newValue];
+               }
+           }
+           model.filter({id: this.id}).update(updateFields);
+       } else {
+           model.insert(updateFields);
+       }
+    }
+
+}
+
+/*******************************************
+  QMField
+  Define a database field with attributes
+  ******************************************/
+
+function QMField(type, label, params) {
+    this.items = [];
+    var fieldName;
+    this.type = type;
+    this.params = params;
 }
 
 //TODO: Migrations!
