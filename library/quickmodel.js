@@ -61,7 +61,7 @@ QMDatabase.prototype = {
         for (var param in data.params) {
             switch(param) {
                 case 'accept_null':
-                    if (!param) {
+                    if (!data.params[param]) {
                         items.push('NOT NULL');
                     }
                     break;
@@ -71,7 +71,7 @@ QMDatabase.prototype = {
                     }
                     break;
                 case 'references':
-                    fk.push('REFERENCES ' + data.params[param] + '(id)');
+                    fk.push('REFERENCES ' + data.params[param] + '(id) ON DELETE CASCADE');
                     break;
             }
         }
@@ -251,6 +251,7 @@ QMModel.prototype = {
         sql += this._defineWhereClause(this.filterConditions);
 
         this._meta.db._runSQL(sql);
+        this.filterConditions = {};
     },
     insert: function(obj) {
         var sql = "INSERT INTO " + this._meta.tableName + "(";
@@ -284,6 +285,7 @@ QMModel.prototype = {
         var sql = "DELETE FROM " + this._meta.tableName;
         sql += this._defineWhereClause();
         this._meta.db._runSQL(sql);
+        this.filterConditions = {};
     },
     _defineWhereClause: function() {
         var sql = '';

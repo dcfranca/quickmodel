@@ -145,18 +145,26 @@ TestCase {
             name: quickModel.String('Name', {accept_null:false})
         });
         var Track = quickModel.define('Track', {
-            trackName: quickModel.String('Track Name', {accept_null:false}),
+            title: quickModel.String('Track Name', {accept_null:false}),
             artist: quickModel.FK('Artist', {'references': 'Artist'})
         })
 
-        //Shouldn work
-        var artist = Artist.create({name: null});
+        var artist = Artist.create({name: 'Lana del Rey'});
+        var track = Track.create({title: 'Born to die', artist: artist.id});
+
+        compare(track.artist, artist.id);
+
+        Artist.filter({id: artist.id}).remove();
+
+        //No more artists
+        var artists = Artist.all();
+        compare(artists.length, 0);
     }
 }
 
-//Get/Set for lazy evaluation
+//TODO
 //Test foreign key
 //Test unique item
 //Test not null
 //Test delete foreign key
-//Test sorting date
+//Test save null
