@@ -296,6 +296,7 @@ QMModel.prototype = {
             var operator;
             var newOperator = '=';
             var field = cond;
+            var position;
             if (cond.indexOf('__') > -1) {
                 var operands = cond.split('__');
                 field = operands[0];
@@ -317,16 +318,39 @@ QMModel.prototype = {
                         newOperator = 'IS NOT NULL';
                     break;
                 case 'like':
-                    newOperator = 'like'; break;
+                    newOperator = 'LIKE';
+                    position = 'BEGINEND';
+                    break;
+                case 'startswith':
+                    newOperator = 'LIKE';
+                    position = 'END';
+                    break;
+                case 'endswith':
+                    newOperator = 'LIKE';
+                    position = 'BEGIN';
+                    break;
                 }
+            }
+            else if (this.filterConditions[cond].constructor === Array) {
+                newOperator = 'IN';
             }
 
             sql += field + " " + newOperator + " ";
-            if (operator === 'like') {
-                sql += "'%"+ this.filterConditions[cond] + "%'";
+            if (newOperator === 'LIKE') {
+                sql += "'";
+                if (position.indexOf('BEGIN') > -1) {
+                    sql += "%";
+                }
+                sql += this.filterConditions[cond];
+                if (position.indexOf('END') > -1) {
+                    sql += "%";
+                }
+                sql += "'";
             } else if (operator !== 'null') {
                 if (this.filterConditions[cond].constructor === String) {
                     sql += "'" + this.filterConditions[cond] + "'";
+                } else if (newOperator === 'IN') {
+                    sql += "('" + this.filterConditions[cond].join("','") + "')";
                 }
                 else {
                     sql += this.filterConditions[cond];

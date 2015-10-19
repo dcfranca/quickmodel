@@ -181,7 +181,13 @@ TestCase {
         var last3artists = Artist.filter({id: [5, 4, 3]}).order('id').all();
         compare(last3artists.length, 3);
         compare(last3artists[0].name, 'Arctic Monkeys');
+        compare(last3artists[1].name, 'Johnny Cash');
+        compare(last3artists[2].name, 'Johnny Bravo');
 
+        var allJohnnys = Artist.filter({name__startswith: 'Johnny'}).order('name').all();
+        compare(allJohnnys.length, 2);
+        compare(allJohnnys[0].name, 'Johnny Bravo');
+        compare(allJohnnys[1].name, 'Johnny Cash');
 
     }
 }
