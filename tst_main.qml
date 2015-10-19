@@ -166,14 +166,14 @@ TestCase {
         var artist4 = Artist.create({name: 'Johnny Cash'});
         var artist5 = Artist.create({name: 'Johnny Bravo'});
 
-        var artists_johnny = Artist.filter({name__like: 'Johnny'}).all();
-        compare(artists_johnny.length, 2);
+        var artistsLikeJohnny = Artist.filter({name__like: 'Johnny'}).all();
+        compare(artistsLikeJohnny.length, 2);
 
-        var sorted_artists = Artist.order('name').limit(3).all();
-        compare(sorted_artists.length, 3);
-        compare(sorted_artists[0].name, 'Arctic Monkeys');
-        compare(sorted_artists[1].name, 'Johnny Bravo');
-        compare(sorted_artists[2].name, 'Johnny Cash');
+        var sortedArtists = Artist.order('name').limit(3).all();
+        compare(sortedArtists.length, 3);
+        compare(sortedArtists[0].name, 'Arctic Monkeys');
+        compare(sortedArtists[1].name, 'Johnny Bravo');
+        compare(sortedArtists[2].name, 'Johnny Cash');
 
         var lana = Artist.filter({name: 'Lana del Rey'}).get();
         compare(lana.name, 'Lana del Rey');
