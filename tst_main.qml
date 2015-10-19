@@ -178,6 +178,11 @@ TestCase {
         var lana = Artist.filter({name: 'Lana del Rey'}).get();
         compare(lana.name, 'Lana del Rey');
 
+        var last3artists = Artist.filter({id: [5, 4, 3]}).order('id').all();
+        compare(last3artists.length, 3);
+        compare(last3artists[0].name, 'Arctic Monkeys');
+
+
     }
 }
 

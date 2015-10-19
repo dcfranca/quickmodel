@@ -38,6 +38,7 @@ Run your queries on your new database:
 
 ### TODO
   - More detailed documentation
+  - Support to IN operator
   - Support to migrations
   - Support to more operators (__startswith/__endswith)
   - Support to joins
