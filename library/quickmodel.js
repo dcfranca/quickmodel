@@ -167,6 +167,12 @@ QMDatabase.prototype = {
 
         if (this.migrate) {
             for (var i=0; i< oldObjs.length; i++) {
+                for (var field in oldObjs[i]) {
+                    if (!(field in this.properties) && field !== '_meta' && field !== 'save') {
+                        delete oldObjs[i][field];
+                    }
+                }
+
                 oldObjs[i].save(true);
             }
         }

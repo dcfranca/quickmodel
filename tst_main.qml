@@ -207,11 +207,12 @@ TestCase {
         Book.create({title: "Lolita", authorName: "Vladimir Nabokov"});
 
         //Migrate
+        console.log("MIGRATING TO 1.1");
         quickModel = new QuickModel.QMDatabase(dbName, '1.1');
         Book = quickModel.define('Book', {
             title: quickModel.String('Title', {accept_null:false}),
             authorName: quickModel.String('Author Name', {accept_null:false}),
-            pages: quickModel.Integer('Pages', {default: 0})
+            pages: quickModel.Integer('Pages', {default: 2})
         });
 
         var books = Book.order('title').all();
@@ -219,19 +220,42 @@ TestCase {
 
         compare(books[0].title, "A Clockwork Orange");
         compare(books[0].authorName, "Anthony Burgess");
-        compare(books[0].pages, 0);
+        compare(books[0].pages, 2);
 
         compare(books[1].title, "Fight Club");
         compare(books[1].authorName, "Chuck Palahniuk");
-        compare(books[1].pages, 0);
+        compare(books[1].pages, 2);
 
         compare(books[2].title, "Haunted");
         compare(books[2].authorName, "Chuck Palahniuk");
-        compare(books[2].pages, 0);
+        compare(books[2].pages, 2);
 
         compare(books[3].title, "Lolita");
         compare(books[3].authorName, "Vladimir Nabokov");
-        compare(books[3].pages, 0);
+        compare(books[3].pages, 2);
+
+        //Remove the field again
+        console.log("MIGRATING TO 1.2");
+        quickModel = new QuickModel.QMDatabase(dbName, '1.2');
+        Book = quickModel.define('Book', {
+            title: quickModel.String('Title', {accept_null:false}),
+            authorName: quickModel.String('Author Name', {accept_null:false})
+        });
+
+        books = Book.order('title').all();
+        compare(books.length, 4);
+
+        compare(books[0].title, "A Clockwork Orange");
+        compare(books[0].authorName, "Anthony Burgess");
+
+        compare(books[1].title, "Fight Club");
+        compare(books[1].authorName, "Chuck Palahniuk");
+
+        compare(books[2].title, "Haunted");
+        compare(books[2].authorName, "Chuck Palahniuk");
+
+        compare(books[3].title, "Lolita");
+        compare(books[3].authorName, "Vladimir Nabokov");
     }
 }
 
