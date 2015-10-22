@@ -190,6 +190,49 @@ TestCase {
         compare(allJohnnys[1].name, 'Johnny Cash');
 
     }
+
+    function test_migrate_database() {
+        var dbName = 'testApp' + new Date();
+        var quickModel = new QuickModel.QMDatabase(dbName, '1.0');
+
+        //Define objects
+        var Book = quickModel.define('Book', {
+            title: quickModel.String('Title', {accept_null:false}),
+            authorName: quickModel.String('Author Name', {accept_null:false})
+        });
+
+        Book.create({title: "A Clockwork Orange", authorName: "Anthony Burgess"});
+        Book.create({title: "Fight Club", authorName: "Chuck Palahniuk"});
+        Book.create({title: "Haunted", authorName: "Chuck Palahniuk"});
+        Book.create({title: "Lolita", authorName: "Vladimir Nabokov"});
+
+        //Migrate
+        quickModel = new QuickModel.QMDatabase(dbName, '1.1');
+        Book = quickModel.define('Book', {
+            title: quickModel.String('Title', {accept_null:false}),
+            authorName: quickModel.String('Author Name', {accept_null:false}),
+            pages: quickModel.Integer('Pages', {default: 0})
+        });
+
+        var books = Book.order('title').all();
+        compare(books.length, 4);
+
+        compare(books[0].title, "A Clockwork Orange");
+        compare(books[0].authorName, "Anthony Burgess");
+        compare(books[0].pages, 0);
+
+        compare(books[1].title, "Fight Club");
+        compare(books[1].authorName, "Chuck Palahniuk");
+        compare(books[1].pages, 0);
+
+        compare(books[2].title, "Haunted");
+        compare(books[2].authorName, "Chuck Palahniuk");
+        compare(books[2].pages, 0);
+
+        compare(books[3].title, "Lolita");
+        compare(books[3].authorName, "Vladimir Nabokov");
+        compare(books[3].pages, 0);
+    }
 }
 
 //TODO

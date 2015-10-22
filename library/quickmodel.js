@@ -8,7 +8,28 @@
   */
 
 function QMDatabase(appName, version) {
-    this.conn = Sql.LocalStorage.openDatabaseSync(appName + '_db', version, appName, 100000);
+
+    //Tables to handle version control
+    this.conn = Sql.LocalStorage.openDatabaseSync(appName + '_db', "1.0", appName, 100000,
+        function(db) { console.log("*** DATABASE DOESNT EXIST ****"); }
+    );
+    var AppVersion = this.define('__AppVersion__', {
+        appName: this.String('App Name', {accept_null:false}),
+        version: this.String('Version', {accept_null:false})
+    });
+
+    var appVersion = AppVersion.filter({appName: appName}).get();
+    this.migrate = false;
+    if (appVersion) {
+        if (appVersion.version !== version) {
+            appVersion.version = version;
+            appVersion.save();
+            this.migrate = true
+        }
+    } else {
+        appVersion = AppVersion.create({appName: appName, version: version});
+        this.migrate = false;
+    }
 }
 
 QMDatabase.prototype = {
@@ -73,10 +94,31 @@ QMDatabase.prototype = {
                 case 'references':
                     fk.push('REFERENCES ' + data.params[param] + '(id) ON DELETE CASCADE');
                     break;
+                case 'default':
+                    items.push('DEFAULT ' + data.params[param]);
+                    break;
+
             }
         }
 
         return {field: items.join(' '), fk: fk.join(' ')};
+    },
+    retrieveFields: function(name) {
+        var rs;
+        var sql = "PRAGMA table_info(" + name + ")";
+        this.conn.transaction(
+            function(tx) {
+                console.log("Run SQL: " + sql);
+                rs = tx.executeSql(sql);
+            }
+        )
+
+        var fields = {};
+        for (var idx=0; idx < rs.rows.length; idx++) {
+            fields[rs.rows[idx].name] = null;
+        }
+
+        return fields;
     },
     define: function(name, data) {
         var sql_create = "CREATE TABLE IF NOT EXISTS " + name + " (";
@@ -109,11 +151,27 @@ QMDatabase.prototype = {
         }
 
         sql_create += ")";
+        var model = new QMModel(this, name, this.properties);
+
+        var oldObjs = [];
+        if (this.migrate) {
+            var oldFields = this.retrieveFields(name);
+            var oldModel = new QMModel(this, name, oldFields);
+
+            oldObjs = oldModel.all();
+            this._runSQL("DROP TABLE " + name);
+        }
 
         //Run create table
         this._runSQL(sql_create);
 
-        return new QMModel(this, name, this.properties);
+        if (this.migrate) {
+            for (var i=0; i< oldObjs.length; i++) {
+                oldObjs[i].save(true);
+            }
+        }
+
+        return model;
     },
     _runSQL: function(sql) {
         this.conn.transaction(
@@ -387,14 +445,16 @@ function QMObject(model) {
     this.id = null;
     //Functions for single object
     //save
-    this.save = function() {
-       if (this.id) {
-           var updateFields = {};
-           for (var newValue in this) {
-               if (newValue !== 'save' && newValue !== '_meta') {
-                   updateFields[newValue] = this[newValue];
-               }
+    this.save = function(forceInsert) {
+       if (typeof forceInsert === 'undefined') { forceInsert = false; }
+       var updateFields = {};
+       for (var newValue in this) {
+           if (newValue !== 'save' && newValue !== '_meta') {
+               updateFields[newValue] = this[newValue];
            }
+       }
+
+       if (this.id && !forceInsert) {
            model.filter({id: this.id}).update(updateFields);
        } else {
            model.insert(updateFields);
