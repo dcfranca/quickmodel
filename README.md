@@ -38,7 +38,5 @@ Run your queries on your new database:
 
 ### TODO
   - More detailed documentation
-  - Support to migrations
   - Support to joins
-  - Support to default values
   - Support to async calls
