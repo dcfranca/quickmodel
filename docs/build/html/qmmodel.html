@@ -40,6 +40,19 @@
             
   <div class="section" id="qmmodel">
 <h1>QMModel<a class="headerlink" href="#qmmodel" title="Permalink to this headline">¶</a></h1>
+<p>QMModel represents a model attached to a database table, the model is created when you define a new table/object:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>var Book = quickModel.define(&#8216;Book&#8217;, {</dt>
+<dd><blockquote class="first">
+<div><p>title: quickModel.String(&#8216;Title&#8217;, {accept_null:false}),</p>
+<p>authorName: quickModel.String(&#8216;Author Name&#8217;, {accept_null:false}),</p>
+<p>pages: quickModel.Integer(&#8216;Pages&#8217;, {default: 0})</p>
+</div></blockquote>
+<p class="last">});</p>
+</dd>
+</dl>
+</div></blockquote>
 </div>
 
 

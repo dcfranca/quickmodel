@@ -40,6 +40,15 @@
             
   <div class="section" id="qmobject">
 <h1>QMObject<a class="headerlink" href="#qmobject" title="Permalink to this headline">¶</a></h1>
+<p>QMObject represents a single instance of an object in the database:</p>
+<blockquote>
+<div><p>//Create a new object in the database and store it on myBook variable</p>
+<p>var myBook = Book.create({title: &#8220;Haunted&#8221;, authorName: &#8220;Chuck Palahniuk&#8221;});</p>
+<p>//Retrieve the object from the database</p>
+<p>var book = Book.filter(authorName: &#8220;Chuck Palahniuk&#8221;).get();</p>
+<p>//Retrieve a collection of objects from the database sorted by title</p>
+<p>var books = Book.order(&#8216;title&#8217;).all();</p>
+</div></blockquote>
 </div>
 
 

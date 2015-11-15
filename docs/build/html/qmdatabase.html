@@ -40,6 +40,27 @@
             
   <div class="section" id="qmdatabase">
 <h1>QMDatabase<a class="headerlink" href="#qmdatabase" title="Permalink to this headline">¶</a></h1>
+<p>QMDatabase represents a database connection, it&#8217;s the first class you need initialize before use the library.</p>
+<dl class="docutils">
+<dt>To initialize it as simple as:</dt>
+<dd><p class="first">import &#8220;quickmodel.js&#8221; as QuickModel</p>
+<p class="last">var quickModel = new QuickModel.QMDatabase(&#8220;myApp&#8221;, &#8216;1.0&#8217;);</p>
+</dd>
+</dl>
+<p>Where the &#8220;myApp&#8221; is the name of your app and &#8220;1.0&#8221; is the version</p>
+<p>With the QMDatabase instance you can define your tables/objects:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>var Book = quickModel.define(&#8216;Book&#8217;, {</dt>
+<dd><blockquote class="first">
+<div><p>title: quickModel.String(&#8216;Title&#8217;, {accept_null:false}),</p>
+<p>authorName: quickModel.String(&#8216;Author Name&#8217;, {accept_null:false}),</p>
+<p>pages: quickModel.Integer(&#8216;Pages&#8217;, {default: 0})</p>
+</div></blockquote>
+<p class="last">});</p>
+</dd>
+</dl>
+</div></blockquote>
 </div>
 
 

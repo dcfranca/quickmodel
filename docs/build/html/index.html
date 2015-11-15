@@ -52,31 +52,33 @@ Tha main goal is to provide a very simple ORM layer on top of the SQLite access.
 <div class="section" id="quick-start">
 <h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
 <p>Clone the repository and import the library/quickmodel.js file into your project.</p>
-<p>Define your database and the models:</p>
+<p>Define your database and the models in a js file:</p>
 <blockquote>
 <div><p>var quickModel = new QuickModel.QMDatabase(&#8216;testApp&#8217;, &#8216;1.0&#8217;);
-//Define objects
-var Artist = quickModel.define(&#8216;Artist&#8217;, {</p>
-<blockquote>
-<div>name: quickModel.String(&#8216;Name&#8217;, {accept_null:false})</div></blockquote>
-<p>});
-var Track = quickModel.define(&#8216;Track&#8217;, {</p>
-<blockquote>
-<div>title: quickModel.String(&#8216;Track Name&#8217;, {accept_null:false}),
-artist: quickModel.FK(&#8216;Artist&#8217;, {&#8216;references&#8217;: &#8216;Artist&#8217;})</div></blockquote>
+//Define objects</p>
+<dl class="docutils">
+<dt>var Artist = quickModel.define(&#8216;Artist&#8217;, {</dt>
+<dd>name: quickModel.String(&#8216;Name&#8217;, {accept_null:false})</dd>
+</dl>
+<p>});</p>
+<dl class="docutils">
+<dt>var Track = quickModel.define(&#8216;Track&#8217;, {</dt>
+<dd>title: quickModel.String(&#8216;Track Name&#8217;, {accept_null:false}),
+artist: quickModel.FK(&#8216;Artist&#8217;, {&#8216;references&#8217;: &#8216;Artist&#8217;})</dd>
+</dl>
 <p>})</p>
 </div></blockquote>
 <p>Run your queries on your new database:</p>
 <blockquote>
-<div><p>var artist1 = Artist.create({name: &#8216;Lana del Rey&#8217;});
-var artist2 = Artist.create({name: &#8216;Rammstein&#8217;});
-var artist3 = Artist.create({name: &#8216;Arctic Monkeys&#8217;});
-var artist4 = Artist.create({name: &#8216;Johnny Cash&#8217;});
-var artist5 = Artist.create({name: &#8216;Johnny Bravo&#8217;});
-var track = Track.create({title: &#8216;Born to die&#8217;, artist: artist.id});</p>
-<p>var artists_johnny = Artist.filter({name__like: &#8216;Johnny&#8217;}).all();
-var sorted_artists = Artist.order(&#8216;name&#8217;).limit(3).all();
-var lana = Artist.filter({name: &#8216;Lana del Rey&#8217;}).get();</p>
+<div><p>var artist1 = Artist.create({name: &#8216;Lana del Rey&#8217;});</p>
+<p>var artist2 = Artist.create({name: &#8216;Rammstein&#8217;});</p>
+<p>var artist3 = Artist.create({name: &#8216;Arctic Monkeys&#8217;});</p>
+<p>var artist4 = Artist.create({name: &#8216;Johnny Cash&#8217;});</p>
+<p>var artist5 = Artist.create({name: &#8216;Johnny Bravo&#8217;});</p>
+<p>var track = Track.create({title: &#8216;Born to die&#8217;, artist: artist.id});</p>
+<p>var artists_johnny = Artist.filter({name__like: &#8216;Johnny&#8217;}).all();</p>
+<p>var sorted_artists = Artist.order(&#8216;name&#8217;).limit(3).all();</p>
+<p>var lana = Artist.filter({name: &#8216;Lana del Rey&#8217;}).get();</p>
 </div></blockquote>
 <div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
