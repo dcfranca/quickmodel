@@ -36,6 +36,8 @@ Run your queries on your new database:
         var sorted_artists = Artist.order('name').limit(3).all();
         var lana = Artist.filter({name: 'Lana del Rey'}).get();
 
+Documentation: http://quickmodel.readthedocs.org/en/latest/
+
 ### TODO
   - More detailed documentation
   - Support to joins
