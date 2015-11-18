@@ -1,0 +1,22 @@
+{
+  "name": "com.coderama.QuickModel",
+  "description": "",
+  "author": {
+    "name": "Daniel França",
+    "email": "daniel.franca@gmail.com"
+  },
+  "repository": {
+    "type": "GITHUB",
+    "url": "https://github.com/danielfranca/quickmodel.git"
+  },
+  "version": {
+    "label": "0.0.1",
+    "revision": "",
+    "fingerprint": ""
+  },
+  "dependencies": [
+  ],
+  "license": "MIT",
+  "pri_filename": "deployment.pri",
+  "webpage": ""
+}
