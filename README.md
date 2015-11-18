@@ -10,6 +10,7 @@ To achieve those goals we aim the following
 
 ### Quick Start
 Clone the repository and import the library/quickmodel.js file into your project.
+You can also find this project in qpm: https://www.qpm.io/
 
 Define your database and the models:
 
