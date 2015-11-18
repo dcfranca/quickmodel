@@ -1,6 +1,6 @@
 {
   "name": "com.coderama.QuickModel",
-  "description": "",
+  "description": "QuickModel is a simple/easy to setup ORM library for Qt/QML",
   "author": {
     "name": "Daniel França",
     "email": "daniel.franca@gmail.com"
