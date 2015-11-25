@@ -1,15 +1,15 @@
 # QuickModel
 
-QuickModel is a simple/easy to setup ORM library for Qt/QML.
-Tha main goal is to provide a very simple ORM layer on top of the SQLite access.
+QuickModel is a simple, easy to setup ORM library for Qt/QML.
+Tha main goal is to provide a very simple ORM layer on top of SQLite.
 
-To achieve those goals we aim the following
+To achieve these goals we aim for the following:
 
-  - Single file library/Just need to import a single file into your QML project
+  - Single file library. Just import a single file into your QML project
   - Consistent interface inspired by Django ORM
 
 ### Quick Start
-Clone the repository and import the library/quickmodel.js file into your project.
+Clone the repository and import the `library/quickmodel.js` file into your project.
 You can also find this project in qpm: https://www.qpm.io/
 
 Define your database and the models:
@@ -31,7 +31,7 @@ Run your queries on your new database:
         var artist3 = Artist.create({name: 'Arctic Monkeys'});
         var artist4 = Artist.create({name: 'Johnny Cash'});
         var artist5 = Artist.create({name: 'Johnny Bravo'});
-        var track = Track.create({title: 'Born to die', artist: artist.id});
+        var track = Track.create({title: 'Born to die', artist: artist1.id});
         
         var artists_johnny = Artist.filter({name__like: 'Johnny'}).all();
         var sorted_artists = Artist.order('name').limit(3).all();
