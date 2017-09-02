@@ -8,10 +8,15 @@
   */
 
 function QMDatabase(appName, version) {
-
+    this.migrate = false;
     //Tables to handle version control
+    var qMDatabase = this;
     this.conn = Sql.LocalStorage.openDatabaseSync(appName + '_db', "1.0", appName, 100000,
-        function(db) { console.log("*** DATABASE DOESNT EXIST ****"); }
+        function(db) {
+            qMDatabase.migrate = true;
+            console.log("*** DATABASE DOESNT EXIST ****");
+            db.changeVersion("", "1.0");
+        }
     );
     var AppVersion = this.define('__AppVersion__', {
         appName: this.String('App Name', {accept_null:false}),
@@ -19,7 +24,7 @@ function QMDatabase(appName, version) {
     });
 
     var appVersion = AppVersion.filter({appName: appName}).get();
-    this.migrate = false;
+
     if (appVersion) {
         if (appVersion.version !== version) {
             appVersion.version = version;
@@ -28,7 +33,7 @@ function QMDatabase(appName, version) {
         }
     } else {
         appVersion = AppVersion.create({appName: appName, version: version});
-        this.migrate = false;
+        this.migrate = true;
     }
 }
 
@@ -92,7 +97,7 @@ QMDatabase.prototype = {
                     }
                     break;
                 case 'references':
-                    fk.push('REFERENCES ' + data.params[param] + '(id) ON DELETE CASCADE');
+                    fk.push('REFERENCES ' + data.params[param] + '(id) ON DELETE CASCADE ON UPDATE CASCADE');
                     break;
                 case 'default':
                     items.push('DEFAULT ' + data.params[param]);
@@ -153,26 +158,24 @@ QMDatabase.prototype = {
         sql_create += ")";
         var model = new QMModel(this, name, this.properties);
 
-        var oldObjs = [];
         if (this.migrate) {
+            var oldObjs = [];
             var oldFields = this.retrieveFields(name);
-            var oldModel = new QMModel(this, name, oldFields);
+            if (!isEmpty(oldFields)) {
+                var oldModel = new QMModel(this, name, oldFields);
+                oldObjs = oldModel.all();
+                this._runSQL("DROP TABLE " + name);
+            }
 
-            oldObjs = oldModel.all();
-            this._runSQL("DROP TABLE " + name);
-        }
+            //Run create table
+            this._runSQL(sql_create);
 
-        //Run create table
-        this._runSQL(sql_create);
-
-        if (this.migrate) {
             for (var i=0; i< oldObjs.length; i++) {
                 for (var field in oldObjs[i]) {
                     if (!(field in this.properties) && field !== '_meta' && field !== 'save') {
                         delete oldObjs[i][field];
                     }
                 }
-
                 oldObjs[i].save(true);
             }
         }
@@ -206,9 +209,33 @@ function QMModel(db, tableName, fields) {
     };
 }
 
+function isEmpty(obj) {
+    // null and undefined are "empty"
+    if (obj == null) return true;
+
+    // Assume if it has a length property with a non-zero value
+    // that that property is correct.
+    if (obj.length > 0)    return false;
+    if (obj.length === 0)  return true;
+
+    // If it isn't an object at this point
+    // it is empty, but it can't be anything *but* empty
+    // Is it empty?  Depends on your application.
+    if (typeof obj !== "object") return true;
+
+    // Otherwise, does it have any properties of its own?
+    // Note that this doesn't handle
+    // toString and valueOf enumeration bugs in IE < 9
+    for (var key in obj) {
+        if (hasOwnProperty.call(obj, key)) return false;
+    }
+
+    return true;
+}
+
 QMModel.prototype = {
     create: function(data) {
-        var obj = this._makeObject(data);
+        var obj = this.makeObject(data);
         var insertId = this.insert(obj);
 
         var objs = this.filter({id:insertId}).all();
@@ -292,7 +319,7 @@ QMModel.prototype = {
         var objs = [];
         for (var i=0; i < rs.rows.length; i++) {
             var item = rs.rows.item(i);
-            var obj = this._makeObject(item);
+            var obj = this.makeObject(item);
             objs.push(obj);
         }
 
@@ -302,17 +329,20 @@ QMModel.prototype = {
 
         return objs;
     },
-    update: function(newValues) {
+    update: function(obj) {
         var sql = "UPDATE " + this._meta.tableName + " SET ";
         var idx = 0;
-        for (var field in newValues) {
-            if (field === 'id') continue;
+        for (var field in obj) {
+            if (field === '_meta' || field === 'save')
+                continue;
+            if (field === 'id' && isEmpty(obj[field]))
+                continue;
 
             if (idx > 0) sql += ",";
-            sql += field + " = '" + newValues[field] + "'";
+            sql += field + " = " + this._convert2SqlType(obj[field]) + "";
             idx++;
-        };
-        sql += this._defineWhereClause(this.filterConditions);
+        }
+        sql += this._defineWhereClause();
 
         this._meta.db._runSQL(sql);
         this.filterConditions = {};
@@ -322,18 +352,19 @@ QMModel.prototype = {
         var fields = [];
         var values = [];
         for (var field in obj) {
-            if (field === 'id' || field === '_meta' || field === 'save')
+            if (field === '_meta' || field === 'save')
+                continue;
+            if (field === 'id' && isEmpty(obj[field]))
                 continue;
             fields.push(field);
             if (obj[field]) {
-                values.push("'" + obj[field] + "'");
-            }
-            else {
+                values.push(this._convert2SqlType(obj[field]));
+            } else {
                 values.push('NULL');
             }
         }
-        sql += fields.join(',');
-        sql += ") VALUES (" + values.join(',') + ")";
+        sql += fields.join(', ');
+        sql += ") VALUES (" + values.join(', ') + ")";
 
         var rs;
         this._meta.db.conn.transaction(
@@ -350,6 +381,39 @@ QMModel.prototype = {
         sql += this._defineWhereClause();
         this._meta.db._runSQL(sql);
         this.filterConditions = {};
+    },
+    _convert2SqlType: function (value) {
+        var l_type = typeof value;
+
+        // adjusting type based on object instanceof
+        if (l_type === 'object') {
+            if (value instanceof Date) {
+                l_type = 'date';
+            } else
+            if (value instanceof Number) {
+                l_type = 'number';
+            } else
+            if (value instanceof String) {
+                l_type = 'string';
+            } else
+            if (value instanceof Boolean) {
+                l_type = 'boolean';
+            }
+        }
+
+        if (l_type === 'boolean') {
+            value = value ? 1 : 0;
+            l_type = 'number';
+        }
+        if (l_type === 'date') {
+            value = value.toISOString();
+            l_type = 'string';
+        }
+        if (l_type === 'string') {
+            value = "'" + value.replace("'", "''") + "'";
+        }
+
+        return value;
     },
     _defineWhereClause: function() {
         var sql = '';
@@ -394,8 +458,7 @@ QMModel.prototype = {
                     position = 'BEGIN';
                     break;
                 }
-            }
-            else if (this.filterConditions[cond].constructor === Array) {
+            } else if (this.filterConditions[cond].constructor === Array) {
                 newOperator = 'IN';
             }
 
@@ -412,12 +475,16 @@ QMModel.prototype = {
                 sql += "'";
             } else if (operator !== 'null') {
                 if (this.filterConditions[cond].constructor === String) {
-                    sql += "'" + this.filterConditions[cond] + "'";
-                } else if (newOperator === 'IN') {
-                    sql += "('" + this.filterConditions[cond].join("','") + "')";
-                }
-                else {
-                    sql += this.filterConditions[cond];
+                    sql += this._convert2SqlType(this.filterConditions[cond]);
+                } else
+                if (newOperator === 'IN') {
+                    sql += "(";
+                    for (var value in this.filterConditions[cond]) {
+                        sql += this._convert2SqlType(value);
+                    }
+                    sql += ")";
+                } else {
+                    sql += this._convert2SqlType(this.filterConditions[cond]);
                 }
             }
             idx++;
@@ -429,7 +496,7 @@ QMModel.prototype = {
 
         return sql;
     },
-    _makeObject: function(values) {
+    makeObject: function(values) {
         var obj = new QMObject(this);
         for (var key in values) {
             obj[key] = values[key];
@@ -449,24 +516,19 @@ function QMObject(model) {
     };
 
     this.id = null;
+}
+
+QMObject.prototype = {
     //Functions for single object
-    //save
-    this.save = function(forceInsert) {
+    save: function(forceInsert) {
        if (typeof forceInsert === 'undefined') { forceInsert = false; }
-       var updateFields = {};
-       for (var newValue in this) {
-           if (newValue !== 'save' && newValue !== '_meta') {
-               updateFields[newValue] = this[newValue];
-           }
-       }
-
        if (this.id && !forceInsert) {
-           model.filter({id: this.id}).update(updateFields);
+           this._meta.model.filter({id: this.id}).update(this);
        } else {
-           model.insert(updateFields);
+           this.id = this._meta.model.insert(this);
        }
+       return this;
     }
-
 }
 
 /*******************************************
