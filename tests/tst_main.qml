@@ -1,7 +1,7 @@
 import QtQuick 2.4
 import QtTest 1.0
 
-import "library/quickmodel.js" as QuickModel
+import "qrc:/QuickModel/quickmodel.js" as QuickModel
 
 TestCase {
     name: "quickModelTests"

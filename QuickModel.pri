@@ -1,3 +1,4 @@
+QML_IMPORT_PATH += $$PWD
 
 RESOURCES += \
-    $$PWD/com_coderama_QuickModel.qrc
+    $$PWD/QuickModel.qrc

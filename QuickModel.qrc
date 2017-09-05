@@ -1,6 +1,6 @@
-
 <RCC>
-    <qresource prefix="/com/coderama/QuickModel">
-        <file>qmldir</file>
+    <qresource prefix="/">
+        <file>QuickModel/qmldir</file>
+        <file>QuickModel/quickmodel.js</file>
     </qresource>
 </RCC>
