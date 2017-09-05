@@ -5,6 +5,7 @@ import "qrc:/QuickModel/quickmodel.js" as QuickModel
 
 TestCase {
     name: "quickModelTests"
+    property string dbName: 'testApp' + new Date();
 
     /****************
       Classes: QMDatabase / QMClass / QMObject
@@ -33,7 +34,7 @@ TestCase {
       ***************/
 
     function test_basic_orm() {
-        var quickModel = new QuickModel.QMDatabase('testApp' + new Date(), '1.0');
+        var quickModel = new QuickModel.QMDatabase(dbName, '1.0');
 
         //Define object
         var User = quickModel.define('User', {
@@ -44,6 +45,7 @@ TestCase {
           height: quickModel.Float('Height'),
           weight: quickModel.Integer('Weight')
         });
+        User.remove();
 
         //Create object
         var user = User.create({username: "dfranca", firstName: "Daniel", lastName: "Franca"});
@@ -131,14 +133,11 @@ TestCase {
         //Test sorting date and not null
         var youngestUser = User.filter({birthday__null: false}).order('-birthday').get();
         compare(youngestUser.username, 'bsimpson');
-        var bd = new Date(youngestUser.birthday);
-        compare(bd.getFullYear(), 2002);
-        compare(bd.getMonth()+1, 6);
-        compare(bd.getDate(), 12);
+        compare(youngestUser.birthday, new Date("2002-06-12"));
     }
 
     function test_field_attributes() {
-        var quickModel = new QuickModel.QMDatabase('testApp' + new Date(), '1.0');
+        var quickModel = new QuickModel.QMDatabase(dbName, '1.1');
 
         //Define objects
         var Artist = quickModel.define('Artist', {
@@ -192,8 +191,7 @@ TestCase {
     }
 
     function test_migrate_database() {
-        var dbName = 'testApp' + new Date();
-        var quickModel = new QuickModel.QMDatabase(dbName, '1.0');
+        var quickModel = new QuickModel.QMDatabase(dbName, '1.2');
 
         //Define objects
         var Book = quickModel.define('Book', {
@@ -208,7 +206,7 @@ TestCase {
 
         //Migrate
         console.log("MIGRATING TO 1.1");
-        quickModel = new QuickModel.QMDatabase(dbName, '1.1');
+        quickModel = new QuickModel.QMDatabase(dbName, '1.3');
         Book = quickModel.define('Book', {
             title: quickModel.String('Title', {accept_null:false}),
             authorName: quickModel.String('Author Name', {accept_null:false}),
@@ -235,8 +233,8 @@ TestCase {
         compare(books[3].pages, 2);
 
         //Remove the field again
-        console.log("MIGRATING TO 1.2");
-        quickModel = new QuickModel.QMDatabase(dbName, '1.2');
+        console.log("MIGRATING TO 1.4");
+        quickModel = new QuickModel.QMDatabase(dbName, '1.4');
         Book = quickModel.define('Book', {
             title: quickModel.String('Title', {accept_null:false}),
             authorName: quickModel.String('Author Name', {accept_null:false})
