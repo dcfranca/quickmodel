@@ -1,6 +1,0 @@
-
-<RCC>
-    <qresource prefix="/com/coderama/QuickModel">
-        <file>qmldir</file>
-    </qresource>
-</RCC>
