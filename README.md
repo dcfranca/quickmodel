@@ -10,7 +10,7 @@ To achieve these goals we aim for the following:
 
 ### Quick Start
 Clone the repository.
-You can also find this project in qpm: https://www.qpm.io/
+You can also find this project in [qpm](https://www.qpm.io/)
 
 Include `QuickModel.pri` to your .pro:
 
